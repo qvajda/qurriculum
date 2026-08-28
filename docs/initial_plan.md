@@ -1,0 +1,85 @@
+CV Etsy store:
+- name: qurriculum
+- core idea: generate CV templates for sale as digital download products on Etsy. Differentiating factor is to propose templates per country/language (BE:FR, BE:NL, BE:DE, BE:EN, FR:FR, FR:EN, PL:PL, PL:TR, ...) on top of per professional domain (tech, analytics, horeca, pharma, medical, legal, ...) + possible alternative variants (with picture, without picture, different format).
+- "how" starting concept: Similar process as the qhoto_printshop:
+	- **research** best next CV niche (country/language/domain trio) and research what is the differentiating standard for that trio.
+	- **generate CV** generate  Needs a "english" version always, otherwise "human review" won't be possible. Should first generate core language than translate to english for the review (if core language is not english).
+	- **review agent CV** reviews the generated template against set rules of quality, whether matching the research outcome.
+	- **mockup assembly** assemble mockup containing printscreen of the created cv within pre-rendered mockup scenes.
+	- **listing generate** create listing information (title, tags, description copy, ...) from generated CV. All copy should have core language + english (if not the same language).
+	- **review agent listing** reviews the generated listing against set rules of quality, whether matching the research outcome and the generated template.
+	- **human taste review** approval flow via telegram (same as qhoto_printshop) showing mockups, link to the CV file, and the listing copy
+	- **publish draft** publish to Etsy as draft, human to click the "publish"
+	- **Statefulness & storage** local db + cloudflare ; similar to qhoto_printshop
+- **tasks** foreseen, by '*missions*':
+	- *repo setup* - to land with all the needed scaffolding (on top of qops).
+		- setup all the basics that will be needed for proper development ; inspired by qhoto_printshop.
+		- GH pat if not already done as part of qops setup (to enable full qops power).
+	- *initial research* - to clear out all uncertainty and validate the overall plan. Blocked until *repo setup* ships.
+		- how to sell digital download products on etsy.
+		- pull in the ideas that were catalogued linked to this project in notion.
+		- competition research in the CV niche - differentiating factor worthwhile? estimated sales?
+		- what should be copied from qhoto_printshop (beyond the scaffolding)?
+		- is there a ceiling in number of templates: max number of country/language/domains trios? should we just have a exhaustive list instead of randomly researching?
+		- Price point to go for per CV, given competition and estimated cost to generate / maintain delivery mechanism?
+		- How to deal with gender in template? M/F as seperate templates, variants of the same template, or just one gender-neutral (with where relevant based on the trio and its research the "gender" field within the template itself) template?
+		- if hard-blockers or major shifts in design come out of this research mission: wait on user review. Otherwise, send research to user for review, adapt plan where needed based on research, and does not block this mission's complete status (or the other missions that are pending on this mission to complete).
+	- *generating one CV* - to have one generated CV variant: BE:FR (+ EN translation) for analytics domain (that I can accurately judge given job experience) as proof-point that CV template generation works. Blocked until *initial research* ships.
+		- researcher into one trio needs to be build.
+		- generator to be build.
+		- review agent CV to be build.
+		- cloudfare bucket (manual step).
+		- Local DB to be setup + save to cloudflare.
+		- CV template screenshot creation to be build.
+		- final taste gate: wait on user to review generated CV (does not use target telegram taste review, just an interactive session where the link to the cloudlfare file and screenshot is given to user).
+	- *store design* - to create all the elements that make up the Etsy storefront (but not the listings themselves). Blocked until *initial research* ships.
+		- research if branding needs to diverge from qrchard or not, given CV niche and competition.
+		- branding guidelines, to be imported from qhoto_printshop (this is another qrchard child-brand) - or generated based on competition (choice based on research line just above).
+		- store logo.
+		- store banner.
+		- listing sections.
+		- store description & other text fields.
+		- mockup scenes generation prompts creation.
+	- *first batch generation* - to generate the first dozen of CVs, proving the scalability of researcher and generator. Blocked until *generating one CV* ships.
+		- prepare batch of 11 more CVs template ; for a total of 12 when including the initial one.
+		- final taste gate: wait on user to review generated CVs.
+	- *manual setup* - to group together as many as possible manual setup actions for the user to perform as a burst. Blocked until *generating one CV* + *store design* ships.
+		- telegram bot.
+		- etsy store.
+		- etsy app.
+		- to-do list to apply all *store design* elements.
+		- put all needed tokens in .env.
+		- mockup scenes generation + authoring.
+	- *first full listing* - to go from a CV template to the full contents needed for an associated Etsy listing. Blocked until *generating one CV* ships.
+		- Text copy generator to be build.
+		- Text copy reviewer agent to be build.
+		- mockup assembly to be build (/ copied from qhoto_printshop). Blocked by "mockup scenes generation + authoring." from *manual setup* mission.
+		- mockup reviewer agent to be build. (/ copied from qhoto_printshop)
+		- review process via telegram to be build (/ copied from qhoto_printshop).
+		- final taste gate: user review of initial CV template passed via telegram, including the full copy and mockups.
+	- *delivery mechanism* - implement the delivery mechanism for the "digital download product". Blocked until *generating one CV* ships - other blockers TBD what the solution is (e.g. likely blocked by *manual setup*).
+		- exact steps to be detailed based on initial research on the topic.
+	- *etsy piping* - to have a working publishing process to our store. Blocked until *delivery mechanism* + *manual setup* + *first full listing* ships.
+		- copy/adapt qhoto_printshop steps to publish to Etsy via API a draft of the first CV template listing.
+		- final taste gate: user reviews the draft listing via the Etsy dashboard.
+	- *first batch publishing* - to populate the store's initial inventory. Blocked until *etsy piping* ships.
+		- re-use the *first full listing* process on the other 11 CV templates (created in *first batch generation*).
+		- likely: iterate based on review step until majority of listing are accepted.
+		- apply the *etsy piping* to the full initial batch.
+		- final taste gate: user review of the ~11 new draft listing via Etsy dashboard + user publishes as live listing these + the initial listing.
+	- *loop for expansion* - to expand the store's product line to other countries/languages/variants etc. as a "human in the loop" scheduled task. Blocked until *first batch publishing* ships.
+		- decide on cadence of schedule - based on *initial research* outcome.
+		- pipeline creation, sequencing together the different components (research, generation, review template, mockup, copy, review listing, human review, publish).
+		- test pipeline on one more template with a technical success gate + human taste gate.
+		- creation of cron job.
+	- *variants* - to figure out what to do about variants, then implement. Blocked until *first batch publishing* ships. Also parked.
+		- research max number of variants per country/language/domain trio ?
+		- variants directive, where ? in research phase ?
+		- link with "gender" research topic if the answer is that it should be variants.
+	- *CV bundles* - . Blocked until *loop for expansion* ships. Also parked.
+		- research if CV bundles make sense as an oportunity + what should be their price-point.
+		- decide who chooses what gets bundled: user expresses a specific choice, always create bundle once 2+ variants of one template exist, bundles per country ...
+		- research/plan how delivery mechanism would need to be adapted to acocmodate bundles.
+		- apply changes to delivery mechanism according to research.
+		- research/plan how the rest of the process needs adaptation for bundles (depends heavily on "who chooses what gets bundled).
+		- apply implementation plan to the rest of the process.
