@@ -1,0 +1,246 @@
+# RENDERED BY `qops install` from qops/templates/automerge.yml.tmpl + .qops/config.yml
+# Do not hand-edit: `qops doctor` fails on drift.
+#
+# CADR-0006. A green `gate:machine` PR merges itself: the gate has already
+# judged it, so the click was a mindless approval button, and a mindless
+# approval button is not a control.
+#
+# This workflow does NOT merge — *provided the default branch has required
+# status checks.* It queues GitHub's native auto-merge, which then waits for
+# them. The workflow is the control — it fires without anyone remembering — and
+# the gate stays the thing that decides.
+#
+# That proviso used to be an assumption and is now enforced, because it was
+# false once and nothing said so: with no required checks a PR is mergeable the
+# instant it opens, and the old `gh pr merge --auto` merged it on the spot.
+# See the `enable` step below.
+#
+# The gate is read from the LINKED ISSUE, not from the PR. Issues are the
+# source of truth (CLAUDE.md) and nothing labels a PR: the first cut read
+# `github.event.pull_request.labels` and was structurally incapable of ever
+# firing. The issue number comes from the branch, per CADR-0005 — the same rule
+# `qops brief` uses.
+#
+# #128 added the other half: a merge released nothing, so a shipped sortie sat
+# at `state:building` with `ready:auto` still on it forever. The `advance` job
+# below closes that leak on the merge side, where it cannot depend on the
+# launched agent having remembered to write anything.
+name: automerge
+
+on:
+  pull_request:
+    types: [opened, reopened, synchronize, labeled, unlabeled, ready_for_review,
+            closed]
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  enable:
+    # Two conditions can be settled without an API call:
+    #   draft — a draft is not a claim that the work is done
+    #   fork  — an outside contributor's PR is a taste decision, and a fork
+    #           token cannot be trusted with this repo's merges
+    #   closed — `closed` is here for `advance`; there is nothing left to
+    #           auto-merge on a PR that is already gone
+    if: >-
+      github.event.action != 'closed'
+      && github.event.pull_request.draft == false
+      && github.event.pull_request.head.repo.full_name == github.repository
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+      pull-requests: write
+    steps:
+      - name: the linked issue authorises an unread merge
+        id: check
+        # REF is an environment variable, never interpolated into the script:
+        # a branch name is attacker-controlled on a public repo.
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          REF: ${{ github.event.pull_request.head.ref }}
+        run: |
+          stop() { echo "::notice::$1 - not auto-merging"
+                   echo "ok=false" >> "$GITHUB_OUTPUT"; exit 0; }
+          n=$(printf '%s' "$REF" | sed -nE 's|^[a-z]+/([0-9]+)-.*|\1|p')
+          # No number includes `no-issue/`, which by definition has no gate.
+          [ -n "$n" ] || stop "branch carries no issue number"
+          labels=$(gh issue view "$n" --repo qvajda/qurriculum --json labels \
+                     -q '.labels[].name' || true)
+          case "$labels" in *no-auto*) stop "issue #$n carries no-auto" ;; esac
+          case "$labels" in
+            *gate:machine*) echo "ok=true" >> "$GITHUB_OUTPUT" ;;
+            *)
+              # #151. The sortie cannot request a GitHub review - GitHub
+              # rejects a self-review request and this repo has one
+              # collaborator - so the waiting-on-you signal is a label, and
+              # digest.yml renders it. Set here rather than asked of the
+              # launched agent: an instruction in a prompt is a preference,
+              # not a control (GL-53).
+              #
+              # #5. `--remove-label state:building` failed the whole call
+              # whenever the issue carried a different `state:`, and `|| true`
+              # swallowed that failure - the add never ran, and nothing said
+              # so. Remove whichever `state:` label the issue actually
+              # carries, same as `advance` does below, and fail loudly if the
+              # edit still fails instead of hiding it.
+              gh issue edit "$n" --repo qvajda/qurriculum --add-label state:review \
+                --remove-label state:triage --remove-label state:planned \
+                --remove-label state:building --remove-label state:gate \
+                --remove-label state:blocked \
+                || echo "::error::could not label issue #$n state:review - see the gh error above"
+              stop "issue #$n is not gate:machine - the owner merges this one" ;;
+          esac
+
+      - name: hand the merge to the required checks
+        if: steps.check.outputs.ok == 'true'
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          PR: ${{ github.event.pull_request.number }}
+          PR_ID: ${{ github.event.pull_request.node_id }}
+        # `gh pr merge --auto` hides the difference between *queued* and
+        # *merged right now*. With no required status checks on the default
+        # branch a PR is mergeable the instant it opens, so `--auto` merges it
+        # unread - this job's own header says it does not merge, and it did.
+        # Observed on qvajda/qops #2: merged ten seconds before its own gate
+        # finished, in a repo whose branch protection was not yet configured.
+        #
+        # `enablePullRequestAutoMerge` does not hide it. It FAILS when there is
+        # nothing to queue behind, and that failure is exactly the signal that
+        # no check is gating this branch. Fail closed, and name the cause.
+        run: |
+          out=$(gh api graphql -f query='
+            mutation($pr: ID!) {
+              enablePullRequestAutoMerge(input: {
+                pullRequestId: $pr, mergeMethod: SQUASH
+              }) { clientMutationId }
+            }' -F pr="$PR_ID" 2>&1) && rc=0 || rc=$?
+          case "$out" in
+            *"already enabled"*|*"Auto merge is already"*)
+              echo "::notice::auto-merge already queued on #$PR"; exit 0 ;;
+          esac
+          if [ "$rc" = 0 ]; then
+            echo "::notice::auto-merge queued on #$PR - the required checks merge it"
+            exit 0
+          fi
+          echo "$out"
+          echo "::error::could not queue auto-merge on #$PR. The usual cause is that main has no required status checks: the PR is already mergeable, there is nothing to queue behind, and enabling it would merge unread code. Configure branch protection (CADR-0003) - the checks are what merge, not this job."
+          exit 1
+
+  advance:
+    # #128. A merged PR means the code landed, so the sortie's issue reaches a
+    # terminal state and stops carrying `ready:auto` — the claim `pickup-loop`
+    # took is released on success, not only on failure.
+    #
+    # It always labels. On `gate:taste` it stops there: a merge is not a
+    # judgement, and the owner's read is the only judgement there is - closing
+    # stays theirs. On `gate:machine` it also closes (CADR-0009): the gate
+    # already judged this row the same way it judged the merge, so there is no
+    # taste read left to give and no owner action to wait on.
+    #
+    # Unconditional label step, on the gate: whoever merged it, by hand or by
+    # the job above, the code is on main and the row is not in
+    # flight.
+    if: >-
+      github.event.action == 'closed'
+      && github.event.pull_request.merged == true
+    runs-on: ubuntu-latest
+    permissions:
+      issues: write
+    steps:
+      - name: the merged sortie reaches a terminal state
+        # REF is an environment variable for the same reason it is above.
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          REF: ${{ github.event.pull_request.head.ref }}
+          PR: ${{ github.event.pull_request.number }}
+        run: |
+          n=$(printf '%s' "$REF" | sed -nE 's|^[a-z]+/([0-9]+)-.*|\1|p')
+          # `no-issue/` branches carry no sortie and have nothing to advance.
+          [ -n "$n" ] || { echo "::notice::branch carries no issue number"; exit 0; }
+          labels=$(gh issue view "$n" --repo qvajda/qurriculum --json labels -q '.labels[].name')
+          # #12: a branch's issue number does not mean that issue's full scope
+          # shipped - a partial fix relabelled `state:done` clobbers a
+          # deliberate owner correction. `no-auto` already means "the owner is
+          # handling this one"; it now vetoes the relabel too, not just the
+          # merge.
+          case "$labels" in
+            *no-auto*) echo "::notice::#$n carries no-auto - not advancing"; exit 0 ;;
+          esac
+          # Removing a label the issue does not carry is a no-op, so the whole
+          # state: family goes in one call rather than a read-then-write.
+          gh issue edit "$n" --repo qvajda/qurriculum \
+            --add-label state:done \
+            --remove-label ready:auto \
+            --remove-label state:triage --remove-label state:planned \
+            --remove-label state:building --remove-label state:gate \
+            --remove-label state:review --remove-label state:blocked
+          case "$labels" in
+            *gate:machine*)
+              gh issue close "$n" --repo qvajda/qurriculum --comment \
+                "Closed by \`automerge-loop\`: \`gate:machine\`, PR #$PR merged - nothing left to judge (CADR-0009)." ;;
+          esac
+
+  # The backstop, run where a bot merge can actually reach it.
+  #
+  # #150 established the mechanism: a `GITHUB_TOKEN` merge raises no workflow
+  # run, so `advance` above never fires on the auto-merge path, and `reconcile`
+  # reads state rather than listening for an event that was never observed. It
+  # then ran only on `digest_cron`, so a shipped row stayed `state:building`
+  # for up to 24 hours - and `metrics` S9 counts `state:building` as work in
+  # flight, so the substrate's own instrument over-reported for a day (#66).
+  #
+  # This adds no schedule and no credential. It rides the `pull_request` events
+  # the repo already produces, so the staleness bounds to "the next time
+  # anything happens on a PR" - about an hour while the loop is working, and
+  # irrelevant while it is not, because nobody is waiting on a quiet repo. The
+  # daily digest run stays as the floor.
+  #
+  # Deliberately NOT gated on `enable`'s conditions: those exclude `closed`,
+  # and a reconcile that only runs on the events `enable` accepts still never
+  # sees the state a merge left behind. The fork check stays - a fork's token
+  # cannot write issues, and running it there would fail every outside PR.
+  reconcile:
+    if: github.event.pull_request.head.repo.full_name == github.repository
+    runs-on: ubuntu-latest
+    permissions:
+      issues: write
+      pull-requests: write
+    env:
+      # The only job that reads a PAT, and only because one sweep needs an
+      # authority `GITHUB_TOKEN` does not have: `updatePullRequestBranch`
+      # refuses `github-actions[bot]` outright, so `advance_behind` (#107)
+      # could never clear a stranded `BEHIND` PR under the default identity
+      # (#117).
+      #
+      # **Optional by construction.** Absent the secret this resolves to
+      # `GITHUB_TOKEN` and the job authenticates exactly as it did before, so a
+      # repo shaped unlike this one installs unchanged (CADR-0008) - it simply
+      # does not get the BEHIND sweep, and `qops reconcile` says so as a skip
+      # rather than failing the run.
+      #
+      # A fine-grained PAT names its repositories, so this is minted per repo:
+      # Contents, Pull requests and Issues write, and **no administration**
+      # (CADR-0003 finding B8 - an agent identity that could edit protection
+      # settings would route around the decision those settings encode).
+      # Updating a branch is not approving a PR; bot approval stays refused.
+      GH_TOKEN: ${{ secrets.QOPS_AGENT_TOKEN || secrets.GITHUB_TOKEN }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+          cache: pip
+      - name: install
+        # One block for every rendered job that runs Python, rendered from
+        # `qops/install.py:INSTALL_DEPS` (CADR-0008). Three copies of it drifted
+        # into three separate failures in repos shaped unlike this one.
+        run: |
+          python -m pip install --upgrade pip
+          if [ -f requirements.txt ]; then pip install -r requirements.txt
+          elif [ -f pyproject.toml ]; then pip install -e .
+          else pip install pyyaml; fi
+          if [ -f requirements-dev.txt ]; then pip install -r requirements-dev.txt; fi
+      - name: every merged sortie's row reaches state:done
+        run: python -m qops reconcile
