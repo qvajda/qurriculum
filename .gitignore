@@ -7,3 +7,14 @@ __pycache__/
 node_modules/
 *.db
 .DS_Store
+
+# qops machine state. `.qops/config.yml` is TRACKED and is the whole point;
+# everything else qops writes under .qops/ is per-machine and is not.
+.qops/state.json
+.qops/resume.md
+.qops/ledger.jsonl
+.qops/outbox.jsonl
+.qops/state-report.md
+.qops/migrate-plan.json
+.qops/wt/
+.qops/runs/
