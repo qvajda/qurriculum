@@ -31,7 +31,7 @@ pickup_task: true
 # spends nothing — the only way to prove the wiring without spending. Read at
 # RENDER time: change it and re-run `qops install`, or the registered task
 # keeps the argument list it already has.
-pickup_launch: false
+pickup_launch: true
 
 # --- guard -------------------------------------------------------------
 protected_branches: [main]
