@@ -1,0 +1,54 @@
+# RENDERED BY `qops install` from qops/templates/gate.yml.tmpl + .qops/config.yml
+# Do not hand-edit: `qops doctor` fails on drift.
+#
+# The machine gate. A taste review is legitimate only once every
+# machine-checkable precondition is green (S4).
+name: gate
+
+on:
+  pull_request:
+  workflow_dispatch:
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  gate:
+    runs-on: ubuntu-latest
+    # `qops doctor` queries the tracker for the open-issue invariants. Without
+    # a token `gh` exits 4 and every one of them is skipped - the step passes
+    # by not running, and "doctor: clean" prints one line under the skip (#44).
+    permissions:
+      contents: read
+      issues: read
+    env:
+      GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      # A failed query is a skip on a laptop and a problem in a required check:
+      # a rate-limited `gh` must not turn this gate green over an unread
+      # backlog.
+      QOPS_STRICT: '1'
+    steps:
+      # Full history: R8's proof half (`qops doctor`) needs the PR's merge
+      # base to run the named test against the code without the change.
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+          cache: pip
+      - name: install
+        # One block for every rendered job that runs Python, rendered from
+        # `qops/install.py:INSTALL_DEPS` (CADR-0008). Three copies of it drifted
+        # into three separate failures in repos shaped unlike this one.
+        run: |
+          python -m pip install --upgrade pip
+          if [ -f requirements.txt ]; then pip install -r requirements.txt
+          elif [ -f pyproject.toml ]; then pip install -e .
+          else pip install pyyaml; fi
+          if [ -f requirements-dev.txt ]; then pip install -r requirements-dev.txt; fi
+      - name: qops doctor — workflows match the config, hooks installed, docs resolve
+        run: python -m qops doctor
+      - name: substrate tests
+        run: python -m pytest -q

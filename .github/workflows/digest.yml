@@ -1,0 +1,167 @@
+# RENDERED BY `qops install` from qops/templates/digest.yml.tmpl + .qops/config.yml
+# Do not hand-edit: `qops doctor` fails on drift.
+#
+# NO LLM RUNS HERE. The digest is a rendering of state that already exists —
+# open issues, CI status, pending approvals. Anything needing judgement belongs
+# in a session, not in a cron.
+name: digest
+
+on:
+  schedule:
+    - cron: '0 6 * * *'
+  workflow_dispatch:
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  # #150. `advance` (automerge.yml) fires on the `closed` pull-request event,
+  # and GitHub raises no such event for a merge its own GITHUB_TOKEN caused —
+  # so the only path that matters, the unattended one, advanced nothing. This
+  # job reads state instead of reacting to an event, which is why it repairs
+  # the row however the PR merged: bot, human or hand-merge.
+  #
+  # It runs on 0 6 * * * rather than on a third cadence of its own,
+  # because the digest below is what consumes the result. `advance` stays as
+  # the fast path; running both is a no-op by design.
+  reconcile:
+    runs-on: ubuntu-latest
+    permissions:
+      issues: write
+      pull-requests: read
+    env:
+      GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+          cache: pip
+      - name: install
+        # One block for every rendered job that runs Python, rendered from
+        # `qops/install.py:INSTALL_DEPS` (CADR-0008). Three copies of it drifted
+        # into three separate failures in repos shaped unlike this one.
+        run: |
+          python -m pip install --upgrade pip
+          if [ -f requirements.txt ]; then pip install -r requirements.txt
+          elif [ -f pyproject.toml ]; then pip install -e .
+          else pip install pyyaml; fi
+          if [ -f requirements-dev.txt ]; then pip install -r requirements-dev.txt; fi
+      - name: every merged sortie's row reaches state:done
+        run: python -m qops reconcile
+      # The tracker-wide sweep. `gate` judges the PR's own row and nothing else
+      # (#63), because a required check that reads all 21 open rows means one
+      # bad row anywhere fails every open PR. The sweep still has to land
+      # somewhere, and here it is: after the reconcile that repairs what it
+      # can, on a job that blocks no merge. Red here is someone's morning, not
+      # a stuck queue.
+      - name: the whole tracker still answers the invariants
+        env:
+          QOPS_STRICT: '1'
+        run: python -m qops doctor
+
+  digest:
+    # The digest renders the rows the job above just repaired.
+    needs: reconcile
+    # Criterion 7 of the extraction PRD: owner CI attention must not double.
+    # With two repos on one cadence it did. A project sets
+    # `ci.digest_posts_on_schedule: false` to keep the RECONCILER daily - which
+    # is the load-bearing half, since `advance` cannot fire on a merge its own
+    # GITHUB_TOKEN caused - while the digest itself becomes on-demand.
+    #
+    # `success() &&` is not decoration: adding an `if:` drops the implicit
+    # success() that `needs:` would otherwise imply, and a digest rendered from
+    # rows a failed reconcile did not repair is worse than no digest.
+    if: success() && (true || github.event_name == 'workflow_dispatch')
+    runs-on: ubuntu-latest
+    permissions:
+      issues: write
+      actions: read
+      checks: read
+    env:
+      GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      REPO: qvajda/qurriculum
+    steps:
+      # Only this job's new section needs the tree and the interpreter — it
+      # names rows `install.states_an_outcome()` (imported by
+      # `scripts/qops_pickup.py`) judges false, and that judgement lives in
+      # Python, not a second regex written into this shell script (#125).
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+          cache: pip
+      - name: install
+        run: |
+          python -m pip install --upgrade pip
+          if [ -f requirements.txt ]; then pip install -r requirements.txt
+          elif [ -f pyproject.toml ]; then pip install -e .
+          else pip install pyyaml; fi
+          if [ -f requirements-dev.txt ]; then pip install -r requirements-dev.txt; fi
+      - name: render
+        run: |
+          {
+            echo "*qurriculum — $(date -u '+%Y-%m-%d')*"
+            echo
+            echo "Open sorties:"
+            gh issue list --repo "$REPO" --state open --limit 15 \
+              --json number,title,labels \
+              --template '{{ range . }}- #{{ .number }} {{ .title }}{{ "\n" }}{{ end }}'
+            echo
+            # The pickup-loop cannot request a review: GitHub rejects a
+            # self-review request and this repo has one collaborator. A sortie
+            # that wants the owner's eyes sets `state:review` instead, and this
+            # is where that lands (owner decision 2026-08-18, #151).
+            echo "Waiting on you (state:review):"
+            gh issue list --repo "$REPO" --state open --limit 20 \
+              --label state:review --json number,title \
+              --template '{{ range . }}- #{{ .number }} {{ .title }}{{ "\n" }}{{ end }}'
+            echo
+            # CADR-0012 §6's floor for a row the planner could not plan: a label
+            # and a digest line. Without the line the row is blocked where only
+            # the tracker can see it, and the loop looks idle rather than stuck
+            # (#83). Escalation by any other transport is an upgrade, not this.
+            echo "Blocked on a clarification (state:blocked):"
+            gh issue list --repo "$REPO" --state open --limit 20 \
+              --label state:blocked --json number,title \
+              --template '{{ range . }}- #{{ .number }} {{ .title }}{{ "\n" }}{{ end }}'
+            echo
+            # #125: a `state:triage` row that states no outcome is invisible
+            # to the planner (`states_an_outcome()` gates it out before
+            # CADR-0010's split duty even sees it) — filed, and stuck there until
+            # someone states one. Only these, never the whole triage queue:
+            # most of it is plannable and simply waiting its turn, and a
+            # section listing all of it says nothing and gets skimmed past.
+            echo "Filed but unreachable (state:triage, states no outcome):"
+            python scripts/qops_pickup.py --unreached-triage
+            echo
+            echo "Awaiting the owner:"
+            gh pr list --repo "$REPO" --state open --limit 10 \
+              --json number,title,reviewDecision \
+              --template '{{ range . }}- PR #{{ .number }} {{ .title }} ({{ .reviewDecision }}){{ "\n" }}{{ end }}'
+            echo
+            # triage-loop's findings land here rather than in an Actions log
+            # nobody opens: a warning with no reader has no terminal state.
+            echo "Needs triage (no state: label):"
+            gh issue list --repo "$REPO" --state open --limit 50 \
+              --json number,title,labels \
+              --jq '[.[] | select([.labels[].name] | map(startswith("state:")) | any | not)] | .[] | "- #\(.number) \(.title)"'
+            echo
+            echo "Last runs:"
+            gh run list --repo "$REPO" --limit 5 \
+              --json workflowName,conclusion,headBranch \
+              --template '{{ range . }}- {{ .workflowName }} {{ .conclusion }} ({{ .headBranch }}){{ "\n" }}{{ end }}'
+          } > digest.md
+          cat digest.md
+
+      - name: update the pinned status issue
+        run: |
+          n=$(gh issue list --repo "$REPO" --label 'qops:status' \
+                --state open --limit 1 --json number --jq '.[0].number')
+          if [ -z "$n" ] || [ "$n" = "null" ]; then
+            gh issue create --repo "$REPO" --title 'qops status' \
+              --label 'qops:status' --body-file digest.md
+          else
+            gh issue edit "$n" --repo "$REPO" --body-file digest.md
+          fi
