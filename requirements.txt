@@ -1,1 +1,2 @@
 qops @ git+https://github.com/qvajda/qops@v0.4.2
+python-docx
