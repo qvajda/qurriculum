@@ -1,0 +1,33 @@
+# FR-Belgium CV core content for a data/business analytics profile.
+# Section names and order are sourced from ADR-0001 §Context (one page,
+# "Formation", "Expérience professionnelle") pending #13's sourced answer —
+# #13 replaces this file's content, not generate.py's code.
+name: "Camille Dubois"
+title: "Analyste de données"
+contact:
+  - "camille.dubois@example.com"
+  - "+32 470 00 00 00"
+  - "Bruxelles, Belgique"
+sections:
+  - heading: "Profil"
+    entries:
+      - "Analyste de données avec 4 ans d'expérience en reporting et
+        visualisation de données pour des équipes commerciales et financières."
+  - heading: "Formation"
+    entries:
+      - "Master en Sciences de Gestion, option Data Analytics — Université
+        Libre de Bruxelles, 2019-2021"
+      - "Bachelier en Économie appliquée — Université Libre de Bruxelles,
+        2016-2019"
+  - heading: "Expérience professionnelle"
+    entries:
+      - "Analyste de données, Société Générale de Banque (Bruxelles) —
+        depuis 2021. Conception de tableaux de bord Power BI pour le suivi
+        des indicateurs commerciaux."
+      - "Stagiaire en analyse de données, Deloitte Belgique (Bruxelles) —
+        2020-2021. Automatisation de rapports mensuels sous Excel et SQL."
+  - heading: "Compétences"
+    entries:
+      - "SQL, Python, Power BI, Excel avancé"
+      - "Français (langue maternelle), Néerlandais (courant), Anglais
+        (professionnel)"
