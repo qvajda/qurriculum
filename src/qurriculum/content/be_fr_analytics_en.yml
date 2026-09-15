@@ -1,0 +1,33 @@
+# EN translation of be_fr_analytics.yml. Same section ids and order as the
+# FR core (#17); do not add, drop or reorder sections here.
+name: "Camille Dubois"
+title: "Data Analyst"
+contact:
+  - "camille.dubois@example.com"
+  - "+32 470 00 00 00"
+  - "Brussels, Belgium"
+sections:
+  - id: "profile"
+    heading: "Profile"
+    entries:
+      - "Data analyst with 4 years of experience in reporting and data
+        visualization for sales and finance teams."
+  - id: "formation"
+    heading: "Education"
+    entries:
+      - "Master's in Management Science, Data Analytics track — Université
+        Libre de Bruxelles, 2019-2021"
+      - "Bachelor's in Applied Economics — Université Libre de Bruxelles,
+        2016-2019"
+  - id: "experience"
+    heading: "Professional Experience"
+    entries:
+      - "Data Analyst, Société Générale de Banque (Brussels) — since 2021.
+        Built Power BI dashboards to track sales indicators."
+      - "Data Analysis Intern, Deloitte Belgium (Brussels) — 2020-2021.
+        Automated monthly reports using Excel and SQL."
+  - id: "skills"
+    heading: "Skills"
+    entries:
+      - "SQL, Python, Power BI, advanced Excel"
+      - "French (native), Dutch (fluent), English (professional)"
