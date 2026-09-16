@@ -11,12 +11,17 @@ from pathlib import Path
 import docx
 import yaml
 
-CONTENT_PATH = Path(__file__).parent / "content" / "be_fr_analytics.yml"
+CONTENT_DIR = Path(__file__).parent / "content"
+CONTENT_PATHS = {
+    "fr": CONTENT_DIR / "be_fr_analytics.yml",
+    "en": CONTENT_DIR / "be_fr_analytics_en.yml",
+}
 DEFAULT_OUT = Path("out/be-fr-analytics-fr.docx")
+DEFAULT_OUT_EN = Path("out/be-fr-analytics-en.docx")
 
 
-def load_content(path: Path = CONTENT_PATH) -> dict:
-    return yaml.safe_load(path.read_text(encoding="utf-8"))
+def load_content(locale: str = "fr") -> dict:
+    return yaml.safe_load(CONTENT_PATHS[locale].read_text(encoding="utf-8"))
 
 
 def render(content: dict, out: Path) -> Path:
@@ -36,9 +41,11 @@ def render(content: dict, out: Path) -> Path:
 
 def main() -> None:
     parser = argparse.ArgumentParser()
-    parser.add_argument("--out", type=Path, default=DEFAULT_OUT)
+    parser.add_argument("--locale", choices=["fr", "en"], default="fr")
+    parser.add_argument("--out", type=Path, default=None)
     args = parser.parse_args()
-    render(load_content(), args.out)
+    out = args.out or (DEFAULT_OUT if args.locale == "fr" else DEFAULT_OUT_EN)
+    render(load_content(args.locale), out)
 
 
 if __name__ == "__main__":
