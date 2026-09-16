@@ -1,0 +1,43 @@
+name: "Jean-Baptiste Alexandre Wauthier-Delacroix de Montmorency"
+title: "Analyste de données senior spécialisé en visualisation, gouvernance et pilotage stratégique des indicateurs commerciaux et financiers"
+contact:
+  - "jean-baptiste.wauthier-delacroix.de.montmorency@example-entreprise-tres-longue.com"
+  - "+32 470 99 88 77"
+  - "Avenue Louise 523, boîte 12, 1050 Bruxelles, Belgique"
+sections:
+  - heading: "Profil"
+    entries:
+      - "Analyste de données comptant plus de dix ans d'expérience dans le
+        pilotage d'indicateurs commerciaux, financiers et opérationnels pour
+        de grands groupes belges et internationaux, avec une expertise
+        particulière en gouvernance de la donnée, automatisation des
+        rapports et animation de comités de direction sur base de tableaux
+        de bord Power BI et Tableau."
+  - heading: "Formation"
+    entries:
+      - "Master en Sciences de Gestion, option Data Analytics — Université
+        Libre de Bruxelles, 2010-2012"
+      - "Bachelier en Économie appliquée — Université Catholique de Louvain,
+        2007-2010"
+      - "Certificat en Gouvernance des données — Solvay Brussels School,
+        2015"
+      - "Formation continue en Machine Learning appliqué à la finance —
+        Université de Liège, 2018"
+  - heading: "Expérience professionnelle"
+    entries:
+      - "Analyste de données senior, Banque Nationale de Belgique
+        (Bruxelles) — depuis 2015. Conception et maintenance de plus de
+        cinquante tableaux de bord Power BI pour le suivi des indicateurs
+        commerciaux, financiers et réglementaires à destination du comité
+        de direction."
+      - "Analyste de données, Société Générale de Banque (Bruxelles) —
+        2012-2015. Automatisation de rapports mensuels sous Excel, SQL et
+        VBA pour les équipes commerciales et financières."
+      - "Stagiaire en analyse de données, Deloitte Belgique (Bruxelles) —
+        2011-2012. Support à l'audit des systèmes de reporting financier."
+  - heading: "Compétences"
+    entries:
+      - "SQL, Python, Power BI, Tableau, Excel avancé, VBA, R"
+      - "Français (langue maternelle), Néerlandais (courant), Anglais
+        (courant), Allemand (notions)"
+      - "Gestion de projet, animation de comités, formation d'équipes"

@@ -1,0 +1,17 @@
+name: "Jo Petit"
+title: "Analyste"
+contact:
+  - "jo@example.com"
+sections:
+  - heading: "Profil"
+    entries:
+      - "Analyste."
+  - heading: "Formation"
+    entries:
+      - "Bac."
+  - heading: "Expérience professionnelle"
+    entries:
+      - "Stage."
+  - heading: "Compétences"
+    entries:
+      - "SQL"
