@@ -1,0 +1,23 @@
+name: "M. & Mme O'Brien-Taylor"
+title: "Analyste \"data & insights\""
+contact:
+  - "contact+cv@example.com"
+  - "Tél: +32 470 <44> 55 66"
+  - "Adresse: 12, rue de l'\"Étoile\" & Cie, Bruxelles"
+sections:
+  - heading: "Profil"
+    entries:
+      - "Analyste travaillant sur des données \"clients\" & \"produits\",
+        avec un focus sur les rapports <confidentiels>."
+  - heading: "Formation"
+    entries:
+      - "Master \"Data & Business\" — HEC Liège, 2017-2019"
+  - heading: "Expérience professionnelle"
+    entries:
+      - "Analyste, Boulanger & Fils SA — depuis 2019. Reporting \"ventes &
+        marges\" pour la direction."
+      - "Consultante, A&B Consulting — 2019. Audit des process <legacy>."
+  - heading: "Compétences"
+    entries:
+      - "SQL, R & Python"
+      - "Rédaction de rapports \"exécutifs\""

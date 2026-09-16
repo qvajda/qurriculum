@@ -31,3 +31,19 @@ def test_name_and_entries_are_present(tmp_path):
     for section in content["sections"]:
         for entry in section["entries"]:
             assert entry in full_text
+
+
+def test_en_sections_match_fr_order(tmp_path):
+    fr = generate.load_content("fr")
+    en = generate.load_content("en")
+    assert [s["id"] for s in en["sections"]] == [s["id"] for s in fr["sections"]]
+
+    out = tmp_path / "en.docx"
+    generate.render(en, out)
+    text = [p.text for p in docx.Document(out).paragraphs]
+
+    positions = [text.index(s["heading"]) for s in en["sections"]]
+    assert positions == sorted(positions), positions
+
+    fr_headings = {s["heading"] for s in fr["sections"]}
+    assert not fr_headings & set(text)
