@@ -1,0 +1,24 @@
+name: "Aurélie Ngô-Léonard"
+title: "Analyste de données sénior"
+contact:
+  - "aurelie.ngo-leonard@example.com"
+  - "+32 470 11 22 33"
+  - "Liège, Belgique"
+sections:
+  - heading: "Profil"
+    entries:
+      - "Analyste de données évoluant dans des équipes commerciales à
+        Bruxelles et Liège, spécialisée en prévisions et tableaux de bord."
+  - heading: "Formation"
+    entries:
+      - "Master en Économétrie — Université de Liège, 2018-2020"
+      - "Erasmus à l'Université de Genève, 2019"
+  - heading: "Expérience professionnelle"
+    entries:
+      - "Analyste sénior, Crédit Agricole (Liège) — depuis 2020. Étude des
+        indicateurs de fidélisation clientèle."
+      - "Chargée d'études, Électricité de France Belgique — 2020-2021."
+  - heading: "Compétences"
+    entries:
+      - "Français (langue maternelle), Néerlandais, Espagnol"
+      - "Prévisions, régression, séries temporelles"
