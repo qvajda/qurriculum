@@ -43,5 +43,5 @@ jobs:
           elif [ -f pyproject.toml ]; then pip install -e .
           else pip install pyyaml; fi
           if [ -f requirements-dev.txt ]; then pip install -r requirements-dev.txt; fi
-      - name: python -m pytest -q
-        run: python -m pytest -q
+      - name: sudo apt-get update -qq && (sudo apt-get install -y -qq libreoffice-writer-nogui || sudo apt-get install -y -qq libreoffice-writer) && python -m pytest -q
+        run: sudo apt-get update -qq && (sudo apt-get install -y -qq libreoffice-writer-nogui || sudo apt-get install -y -qq libreoffice-writer) && python -m pytest -q
