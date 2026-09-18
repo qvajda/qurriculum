@@ -57,8 +57,10 @@ doc_link_roots: []
 # --- CI --------------------------------------------------------------------
 ci:
   python_version: '3.12'
-  test_command: python -m pytest -q
-  gate_command: python -m pytest -q
+  # soffice renders the .docx for the capture tests (#18); the runner image
+  # ships no LibreOffice.
+  test_command: sudo apt-get update -qq && (sudo apt-get install -y -qq libreoffice-writer-nogui || sudo apt-get install -y -qq libreoffice-writer) && python -m pytest -q
+  gate_command: sudo apt-get update -qq && (sudo apt-get install -y -qq libreoffice-writer-nogui || sudo apt-get install -y -qq libreoffice-writer) && python -m pytest -q
   runs_on: ubuntu-latest
   digest_cron: '0 6 * * *'
   digest_posts_on_schedule: true

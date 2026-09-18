@@ -51,4 +51,4 @@ jobs:
       - name: qops doctor — workflows match the config, hooks installed, docs resolve
         run: python -m qops doctor
       - name: substrate tests
-        run: python -m pytest -q
+        run: sudo apt-get update -qq && (sudo apt-get install -y -qq libreoffice-writer-nogui || sudo apt-get install -y -qq libreoffice-writer) && python -m pytest -q
