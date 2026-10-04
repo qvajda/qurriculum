@@ -2,7 +2,8 @@ import pathlib
 import re
 
 DOC = pathlib.Path("docs/research/trio-job-pools.md")
-TRIO = r"[A-Z]{2}:[A-Z]{2}:OC\d"
+# ISCO-08 2-digit only: major groups were rejected as too coarse on PR #40
+TRIO = r"[A-Z]{2}:[A-Z]{2}:OC\d\d"
 
 
 def _rows(text):
