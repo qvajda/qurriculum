@@ -29,9 +29,7 @@
       "Bash(python -m qops resume:*)",
       "Bash(python -m qops doctor:*)",
       "Bash(python -m qops metrics:*)",
-      "Bash(python -m qops pending:*)",
-      "WebFetch",
-      "WebSearch"
+      "Bash(python -m qops pending:*)"
     ],
     "deny": []
   },
