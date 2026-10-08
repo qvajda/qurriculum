@@ -1,4 +1,4 @@
-qops @ git+https://github.com/qvajda/qops@v0.6.1
+qops @ git+https://github.com/qvajda/qops@v0.6.2
 python-docx
 boto3
 pymupdf
