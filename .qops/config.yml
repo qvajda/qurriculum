@@ -97,10 +97,10 @@ agents:
     tools: [Bash, Read]
 
 # --- permissions ---------------------------------------------------------
-# permissions:
-#   extra:
-#     allow: []
-#     deny: []
+permissions:
+  extra:
+    allow: [WebFetch, WebSearch]
+    deny: []
 
 # --- taxonomy ----------------------------------------------------------
 # Every label named anywhere else in this file must appear here.
